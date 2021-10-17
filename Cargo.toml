@@ -1,0 +1,27 @@
+[package]
+name = "engine-api"
+version = "0.1.0"
+edition = "2018"
+authors = ["Stephen Akinyemi <appcypher@outlook.com>"]
+description = "The API implementation of Gigamono"
+readme = "README.md"
+repository = "https://github.com/gigamono/engine-api"
+keywords = ["no-code", "capabilities", "runtime", "serverless", "deno"]
+categories = ["development-tools", "web-programming"]
+documentation = "https://github.com/gigamono/engine-api"
+homepage = "https://gigamono.com"
+license-file = "LICENSE"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "3"
+utilities = { path = "../utilities" }
+futures = "0.3.17"
+
+[lib]
+name = "engine_api"
+path = "lib/lib.rs"
+
+[[bin]]
+name = "server"
+path = "bin/server.rs"
