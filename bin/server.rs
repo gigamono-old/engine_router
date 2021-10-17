@@ -3,8 +3,8 @@ extern crate engine_api;
 extern crate utilities;
 
 use engine_api::APIServer;
+use utilities::result::Result;
 use utilities::setup::SharedSetup;
-use utilities::messages::error::Result;
 
 #[actix_web::main]
 async fn main() -> Result<()> {

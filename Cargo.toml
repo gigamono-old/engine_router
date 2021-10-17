@@ -25,3 +25,6 @@ path = "lib/lib.rs"
 [[bin]]
 name = "server"
 path = "bin/server.rs"
+
+[features]
+debug = []

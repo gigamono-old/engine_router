@@ -1,6 +1,6 @@
 use actix_web::{App, HttpServer};
 use futures::join;
-use utilities::messages::error::Result;
+use utilities::result::Result;
 use utilities::{messages::error::SystemError, setup::SharedSetup};
 
 pub struct APIServer<'a> {
