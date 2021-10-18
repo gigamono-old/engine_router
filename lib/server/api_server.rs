@@ -1,50 +1,59 @@
-use actix_web::{App, HttpServer};
-use futures::join;
-use utilities::result::Result;
-use utilities::{messages::error::SystemError, setup::SharedSetup};
+use std::sync::{Arc, Mutex};
 
-pub struct APIServer<'a> {
-    setup: &'a SharedSetup,
+use super::handlers;
+use actix_web::middleware::Logger;
+use actix_web::web::ServiceConfig;
+use actix_web::{web, App, HttpServer};
+use env_logger;
+use utilities::result::Result;
+use utilities::{http, messages::error::SystemError, setup::APISetup};
+
+pub struct APIServer {
+    pub setup: Arc<Mutex<APISetup>>,
 }
 
-impl<'a> APIServer<'a> {
-    pub fn new(setup: &'a SharedSetup) -> Self {
+impl APIServer {
+    pub fn new(setup: Arc<Mutex<APISetup>>) -> Self {
         Self { setup }
     }
 
     pub async fn listen(&self) -> Result<()> {
-        // Set server up and run.
-        let server = HttpServer::new(|| App::new().service(routes::greet))
-            .bind(("127.0.0.1", self.setup.config.engines.api.port))
-            .map_err(|err| SystemError::Io {
-                ctx: "starting api server".to_string(),
-                src: err,
-            })?
-            .run();
+        let setup = self.setup.clone();
 
-        // Add running acknowledgement after server starts running.
-        let (result, _) = join!(server, self.run_acknowledgement());
-        result.map_err(|err| SystemError::Io {
+        // Get port data from self and drop to release lock after.
+        let port = self.setup.lock().unwrap().common.config.engines.api.port;
+        drop(self);
+
+        // Initialize logger.
+        env_logger::init();
+
+        // Set server up and run.
+        HttpServer::new(move || {
+            App::new()
+                .wrap(Logger::default())
+                .wrap(Logger::new("%a %{User-Agent}i"))
+                .configure(|c| Self::app_config(setup.clone(), c))
+        })
+        .bind(("127.0.0.1", port))
+        .map_err(|err| SystemError::Io {
             ctx: "starting api server".to_string(),
             src: err,
-        })?;
-
-        Ok(())
+        })?
+        .run()
+        .await
+        .map_err(|err| SystemError::Io {
+            ctx: "starting api server".to_string(),
+            src: err,
+        })
     }
 
-    async fn run_acknowledgement(&self) {
-        println!(
-            "server listening on port {}",
-            self.setup.config.engines.api.port
+    fn app_config(setup: Arc<Mutex<APISetup>>, config: &mut ServiceConfig) {
+        config.service(
+            web::resource("/r/*").data(setup).route(
+                web::route()
+                    .guard(http::any_method_guard())
+                    .to(handlers::run),
+            ),
         );
-    }
-}
-
-mod routes {
-    use actix_web::{get, Responder};
-
-    #[get("/greet")]
-    pub async fn greet() -> impl Responder {
-        format!("Hello world!")
     }
 }
