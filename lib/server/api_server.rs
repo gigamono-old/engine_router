@@ -1,38 +1,37 @@
-use std::sync::{Arc, Mutex};
-
 use super::handlers;
-use actix_web::middleware::Logger;
-use actix_web::web::ServiceConfig;
-use actix_web::{web, App, HttpServer};
-use env_logger;
+use actix_web::{
+    self,
+    middleware::Logger,
+    web::{self, ServiceConfig},
+    App, HttpServer,
+};
+use std::sync::Arc;
 use utilities::result::Result;
 use utilities::{http, messages::error::SystemError, setup::APISetup};
 
 pub struct APIServer {
-    pub setup: Arc<Mutex<APISetup>>,
+    pub setup: Arc<APISetup>,
 }
 
 impl APIServer {
-    pub fn new(setup: Arc<Mutex<APISetup>>) -> Self {
+    pub fn new(setup: Arc<APISetup>) -> Self {
         Self { setup }
     }
 
     pub async fn listen(&self) -> Result<()> {
-        let setup = self.setup.clone();
-
-        // Get port data from self and drop to release lock after.
-        let port = self.setup.lock().unwrap().common.config.engines.api.port;
-        drop(self);
-
         // Initialize logger.
         env_logger::init();
+
+        let setup = Arc::clone(&self.setup);
+
+        // Get port info.
+        let port = self.setup.common.config.engines.api.port;
 
         // Set server up and run.
         HttpServer::new(move || {
             App::new()
                 .wrap(Logger::default())
-                .wrap(Logger::new("%a %{User-Agent}i"))
-                .configure(|c| Self::app_config(setup.clone(), c))
+                .configure(|c| Self::app_config(Arc::clone(&setup), c))
         })
         .bind(("127.0.0.1", port))
         .map_err(|err| SystemError::Io {
@@ -47,12 +46,12 @@ impl APIServer {
         })
     }
 
-    fn app_config(setup: Arc<Mutex<APISetup>>, config: &mut ServiceConfig) {
+    fn app_config(setup: Arc<APISetup>, config: &mut ServiceConfig) {
         config.service(
             web::resource("/r/*").data(setup).route(
                 web::route()
                     .guard(http::any_method_guard())
-                    .to(handlers::run),
+                    .to(handlers::run_surl),
             ),
         );
     }
