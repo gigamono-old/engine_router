@@ -21,7 +21,7 @@ The `engine-api` is the front-facing service of the Gigamono framework that the 
 - It is easy.
 
   ```bash
-  docker-compose -f docker/compose.yaml up
+  GIGAMONO_CONFIG_PATH="[path/to/gigamono.yaml]" docker-compose -f docker/compose.yaml up
   ```
 
   This automatically creates and starts a nats server and a postgres db you can work with.

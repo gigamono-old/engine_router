@@ -18,6 +18,10 @@ actix-web = "3"
 utilities = { path = "../utilities" }
 futures = "0.3.17"
 env_logger = "0.9.0"
+log = "0.4.14"
+diesel =  { version = "1.4.8", features = ["postgres", "chrono", "uuidv07" ] }
+uuid = "0.8.2"
+chrono = "0.4.19"
 
 [lib]
 name = "engine_api"
