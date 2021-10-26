@@ -1,4 +1,10 @@
-## Engine API
+<div align="center">
+    <a href="#" target="_blank">
+        <img src="https://raw.githubusercontent.com/appcypher/gigamono-assets/main/avatar-gigamono-boxed.png" alt="Gigamono Logo" width="140" height="140"></img>
+    </a>
+</div>
+
+<h1 align="center">Engine API</h1>
 
 The `engine-api` is the front-facing service of the Gigamono framework that the part users interact with.
 
