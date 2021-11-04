@@ -1,12 +1,18 @@
 use crate::diesel::prelude::*;
-use actix_web::{HttpRequest, HttpResponse, http::StatusCode, web::{Bytes, Data}};
+use actix_web::{
+    web::{Bytes, Data},
+    HttpRequest, HttpResponse,
+};
 use log::info;
-use std::{sync::{Arc, Mutex}, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use utilities::{
     database::DB,
-    http::{self, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER},
-    messages::error::{HandlerError, HandlerErrorMessage, SystemError},
-    natsio::{self, WorkspacesAction, Payload},
+    errors::{self, HandlerError, HandlerErrorMessage},
+    http::{self, StatusCode, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER},
+    natsio::{self, Payload, WorkspacesAction},
     result::HandlerResult,
     setup::APISetup,
 };
@@ -65,20 +71,15 @@ pub(crate) fn get_workspace_id(
         let workspace_id = header_val.to_str().map_err(|err| HandlerError::Client {
             ctx: HandlerErrorMessage::InvalidWorkspaceID,
             code: StatusCode::BAD_REQUEST,
-            src: SystemError::ToStr {
-                ctx: "converting workspace id bytes in header to string".to_string(),
-                src: err,
-            },
+            src: errors::wrap_error("converting workspace id bytes in header to string", err)
+                .unwrap_err(),
         })?;
 
         // Convert string to uuid.
         let workspace_uuid = Uuid::parse_str(workspace_id).map_err(|err| HandlerError::Client {
             ctx: HandlerErrorMessage::InvalidWorkspaceID,
             code: StatusCode::BAD_REQUEST,
-            src: SystemError::Uuid {
-                ctx: "parsing workspace id to uuid".to_string(),
-                src: err,
-            },
+            src: errors::wrap_error("parsing workspace id to uuid", err).unwrap_err(),
         })?;
 
         // Making sure id exists in the db.
@@ -92,10 +93,11 @@ pub(crate) fn get_workspace_id(
             .map_err(|err| HandlerError::Client {
                 ctx: HandlerErrorMessage::InvalidWorkspaceID,
                 code: StatusCode::BAD_REQUEST,
-                src: SystemError::Diesel {
-                    ctx: "getting workspace id associated with name from the db".to_string(),
-                    src: err,
-                },
+                src: errors::wrap_error(
+                    "getting workspace id associated with name from the db",
+                    err,
+                )
+                .unwrap_err(),
             })?;
 
         if !results.is_empty() {
@@ -109,10 +111,8 @@ pub(crate) fn get_workspace_id(
         let workspace_name = header_val.to_str().map_err(|err| HandlerError::Client {
             ctx: HandlerErrorMessage::InvalidWorkspaceID,
             code: StatusCode::BAD_REQUEST,
-            src: SystemError::ToStr {
-                ctx: "converting workspace name bytes in header to string".to_string(),
-                src: err,
-            },
+            src: errors::wrap_error("converting workspace name bytes in header to string", err)
+                .unwrap_err(),
         })?;
 
         // Use workspace name to get id from the db.
@@ -127,10 +127,11 @@ pub(crate) fn get_workspace_id(
             .map_err(|err| HandlerError::Client {
                 ctx: HandlerErrorMessage::InvalidWorkspaceID,
                 code: StatusCode::BAD_REQUEST,
-                src: SystemError::Diesel {
-                    ctx: "getting workspace id associated with name from the db".to_string(),
-                    src: err,
-                },
+                src: errors::wrap_error(
+                    "getting workspace id associated with name from the db",
+                    err,
+                )
+                .unwrap_err(),
             })?;
 
         if !results.is_empty() {
@@ -142,8 +143,6 @@ pub(crate) fn get_workspace_id(
     Err(HandlerError::Client {
         ctx: HandlerErrorMessage::InvalidWorkspaceID,
         code: StatusCode::BAD_REQUEST,
-        src: SystemError::Generic {
-            ctx: "getting workspace id".to_string(),
-        },
+        src: errors::any_error("getting workspace id").unwrap_err(),
     })
 }

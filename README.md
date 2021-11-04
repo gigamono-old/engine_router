@@ -6,7 +6,7 @@
 
 <h1 align="center">Engine API</h1>
 
-The `engine-api` is the front-facing service of the Gigamono framework that the part users interact with.
+`engine-api` is the user-facing service exposing the functions of the Gigamono framework to the users.
 
 > Information provided here is for folks working on this package. If your goal is to get started with the Gigamono framework, check the [Gigamono repo](https://github.com/gigamono/gigamono) on how to do that.
 
@@ -85,13 +85,13 @@ If you prefer to set things up yourself, you can follow this guide.
 - Run migrations
 
   ```bash
-  diesel migration run --database-url "postgresql://localhost:5040/apidb"
+  diesel migration run --database-url "postgresql://localhost:5432/apidb"
   ```
 
 - If you make changes to the migrations folder, update the `lib/db/schema.rs` file with:
 
   ```bash
-  diesel print-schema --database-url "postgresql://localhost:5040/apidb" > lib/db/schema.rs
+  diesel print-schema --database-url "postgresql://localhost:5432/apidb" > lib/db/schema.rs
   ```
 
 - Updating the schema also means updating the models.

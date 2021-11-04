@@ -4,7 +4,7 @@ meta:
   version: "1"
 
 broker:
-  url: nats://127.0.0.1:5040
+  url: nats://127.0.0.1:4222
   subscriptions:
     workspaces:
       version: 1
@@ -14,7 +14,7 @@ broker:
 engines:
   api:
     port: 5050
-    db_url: postgresql://localhost:5030/apidb
+    db_url: postgresql://localhost:5432/apidb
     reply_timeout: 5
 
 ui:

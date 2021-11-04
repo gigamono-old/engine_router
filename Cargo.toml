@@ -21,6 +21,7 @@ log = "0.4.14"
 diesel =  { version = "1.4.8", features = ["postgres", "chrono", "uuidv07" ] }
 uuid = "0.8.2"
 chrono = "0.4.19"
+actix-files = "0.5.0"
 
 [lib]
 name = "engine_api"
