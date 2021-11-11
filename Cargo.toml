@@ -14,14 +14,16 @@ license-file = "LICENSE"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "3"
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 utilities = { path = "../utilities" }
+futures = "0.3.17"
 env_logger = "0.9.0"
 log = "0.4.14"
 diesel =  { version = "1.4.8", features = ["postgres", "chrono", "uuidv07" ] }
 uuid = "0.8.2"
 chrono = "0.4.19"
-actix-files = "0.5.0"
+pin-project-lite = "0.2.7"
 
 [lib]
 name = "engine_api"
@@ -29,7 +31,7 @@ path = "lib/lib.rs"
 
 [[bin]]
 name = "server"
-path = "bin/server.rs"
+path = "bin/api_server.rs"
 
 [features]
 debug = []

@@ -1,8 +1,8 @@
 #[macro_use]
 extern crate diesel;
 
-mod server;
 mod db;
+mod server;
 
-pub use server::*;
 pub use db::*;
+pub use server::*;

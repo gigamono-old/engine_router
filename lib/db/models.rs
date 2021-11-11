@@ -3,10 +3,9 @@
 #![allow(unused)]
 #![allow(clippy::all)]
 
-
-use uuid::Uuid;
-use chrono::DateTime;
 use chrono::offset::Utc;
+use chrono::DateTime;
+use uuid::Uuid;
 #[derive(Queryable, Debug)]
 pub struct Workspace {
     pub id: Uuid,
@@ -15,4 +14,3 @@ pub struct Workspace {
     pub deleted_at: Option<DateTime<Utc>>,
     pub name: String,
 }
-
