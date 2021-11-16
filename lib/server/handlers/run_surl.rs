@@ -1,10 +1,8 @@
 use crate::diesel::prelude::*;
 use hyper::{Body, Request, Response};
 use log::{debug, info};
-use std::{
-    mem,
-    sync::{Arc, Mutex},
-};
+use parking_lot::Mutex;
+use std::{mem, sync::Arc};
 use utilities::{
     database::DB,
     errors::{self, HandlerError, HandlerErrorMessage},
@@ -44,8 +42,8 @@ pub(crate) async fn run_surl(
 
     debug!(r#"Set NATS message headers "{:?}""#, headers);
 
-    // Move stream buffer from mutex. We used `stream_buf.lock().unwrap()` temp MutexGuard value here to avoid async !Send issues.
-    let stream_buf = mem::replace(&mut *stream_buf.lock().unwrap(), vec![]);
+    // Move stream buffer from mutex. We used `stream_buf.lock()` temp MutexGuard value here to avoid async !Send issues.
+    let stream_buf = mem::replace(&mut *stream_buf.lock(), Vec::new());
 
     // TODO(appcypher): Set reply channel.
     let reply = "";
@@ -93,7 +91,7 @@ pub(crate) fn get_workspace_id(
         use crate::db::models::*;
         use crate::db::schema::workspaces::dsl::*;
 
-        let db = db_mutex.lock().unwrap(); // Lock Resource.
+        let db = db_mutex.lock(); // Lock Resource.
         let results = workspaces
             .find(workspace_uuid)
             .load::<Workspace>(&db.conn)
@@ -126,7 +124,7 @@ pub(crate) fn get_workspace_id(
         use crate::db::models::*;
         use crate::db::schema::workspaces::dsl::*;
 
-        let db = db_mutex.lock().unwrap(); // Lock Resource.
+        let db = db_mutex.lock(); // Lock Resource.
         let results = workspaces
             .filter(name.eq(workspace_name))
             .limit(1)

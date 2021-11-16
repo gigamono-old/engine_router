@@ -1,8 +1,9 @@
+use parking_lot::Mutex;
 use pin_project_lite::pin_project;
 use std::{
     io,
     pin::Pin,
-    sync::{Arc, Mutex},
+    sync::Arc,
     task::{Context, Poll},
 };
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
@@ -32,7 +33,7 @@ impl<I: AsyncRead> AsyncRead for RecordStream<I> {
         let poll_result = this.inner.poll_read(cx, buf);
 
         // Record request frame in designated buffer.
-        let mut b = this.buf.lock().unwrap();
+        let mut b = this.buf.lock();
         b.extend(buf.filled().iter());
 
         poll_result

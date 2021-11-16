@@ -1,6 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use hyper::{Body, Request, Response};
+use parking_lot::Mutex;
 use utilities::{
     errors::{self, HandlerError, HandlerErrorMessage},
     http::{utils, StatusCode},
