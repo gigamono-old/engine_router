@@ -10,7 +10,7 @@ use std::panic::AssertUnwindSafe;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use utilities::errors::{self, HandlerError, HandlerErrorMessage};
-use utilities::result::HandlerResult;
+use utilities::result::{Context, HandlerResult};
 use utilities::setup::APISetup;
 
 pub struct APIServer {
@@ -33,12 +33,13 @@ impl APIServer {
         // Bind to address.
         let tcp_listener = TcpListener::bind(addr).await.unwrap();
 
+        // Accept client connections infinitely
         loop {
-            // Clone setup object.
-            let setup = Arc::clone(&self.setup);
-
             // Accept client connection.
             let (tcp_stream, _) = tcp_listener.accept().await.unwrap();
+
+            // Clone setup object.
+            let setup = Arc::clone(&self.setup);
 
             // Spawn a task for each connection.
             tokio::task::spawn(async move {
@@ -46,14 +47,8 @@ impl APIServer {
                 let stream_buf: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(vec![]));
                 let record_stream = RecordStream::new(tcp_stream, Arc::clone(&stream_buf));
 
-                // TODO(appcypher):
-                // - /r/*
-                // - static files
-                // let files = Static::new("../web-ui/dist");
-                // static.serve
-
                 // Set up http handling context. HTTP/1.x supported for now.
-                if let Err(http_err) = Http::new()
+                Http::new()
                     .http1_only(true)
                     .http1_keep_alive(true)
                     .serve_connection(
@@ -68,9 +63,7 @@ impl APIServer {
                         }),
                     )
                     .await
-                {
-                    panic!("ERROR = {}", http_err) // TODO(appcypher)
-                }
+                    .context("serving connection")
             });
         }
     }
@@ -125,55 +118,3 @@ impl APIServer {
         }
     }
 }
-
-// impl APIServer {
-//     pub fn new(setup: Arc<APISetup>) -> Self {
-//         Self { setup }
-//     }
-
-//     // TODO(appcypher):
-//     // In the future we are going to use tokio::TcpListener or create something similar to tokio-minihttp.
-//     // We need to be able to read bytes from socket directly in order to discard natsio::Payload.
-//     // Right now we are doing this:
-//     //      engine-api [parse-request -> convert-to-payload -> serialize-payload -> send-payload-bytes]
-//     //      engine-backend [deserialise-payload]
-//     // When we can do this instead:
-//     //      engine-api [parse-request? -> send-request-bytes]
-//     //      engine-backend [parse-request]
-//     pub async fn listen(&self) -> Result<()> {
-//         // Initialize logger.
-//         env_logger::init();
-
-//         let setup = Arc::clone(&self.setup);
-
-//         // Get port info.
-//         let port = self.setup.common.config.engines.api.port;
-
-//         // Set server up and run
-//         HttpServer::new(move || {
-//             App::new()
-//                 .wrap(Logger::default())
-//                 .configure(|c| Self::app_config(Arc::clone(&setup), c)) // This part needs to come before static files serving.
-//                 .service(
-//                     fs::Files::new("/", &setup.common.config.web_ui.dir)
-//                         .index_file("index.html")
-//                         .use_last_modified(true),
-//                 )
-//         })
-//         .bind(("127.0.0.1", port))
-//         .context("starting api server")?
-//         .run()
-//         .await
-//         .context("starting api server")
-//     }
-
-//     fn app_config(setup: Arc<APISetup>, config: &mut ServiceConfig) {
-//         config.service(
-//             web::resource("/r/*").data(setup).route(
-//                 web::route()
-//                     .guard(http::any_method_guard())
-//                     .to(handlers::run_surl),
-//             ),
-//         );
-//     }
-// }

@@ -29,6 +29,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-nats"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dae854440faecce70f0664f41f09a588de1e7a4366931ec3962ded3d8f903c5"
+dependencies = [
+ "blocking",
+ "nats",
+]
+
+[[package]]
 name = "async-task"
 version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -98,9 +108,9 @@ dependencies = [
 
 [[package]]
 name = "blocking"
-version = "1.0.2"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5e170dbede1f740736619b776d7251cb1b9095c435c34d8ca9f57fcd2f335e9"
+checksum = "046e47d4b2d391b1f6f8b407b1deb8dee56c1852ccd868becf2710f601b5f427"
 dependencies = [
  "async-channel",
  "async-task",
@@ -155,7 +165,6 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "serde",
  "time",
  "winapi",
 ]
@@ -759,14 +768,12 @@ dependencies = [
 
 [[package]]
 name = "nats"
-version = "0.15.2"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a3097b182107db2cf690280d61f23f17ee31d49f3994ad152ee6a10261f77c3"
+checksum = "1c0cfa3903c3e613edddaa4a2f86b2053a1d6fbcf315a3ff352c25ba9f0a8585"
 dependencies = [
  "base64",
  "base64-url",
- "blocking",
- "chrono",
  "crossbeam-channel",
  "fastrand",
  "itoa",
@@ -781,8 +788,6 @@ dependencies = [
  "regex",
  "rustls",
  "rustls-native-certs",
- "serde",
- "serde_json",
  "webpki",
  "winapi",
 ]
@@ -1528,10 +1533,10 @@ name = "utilities"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-nats",
  "bincode",
  "deno_core",
  "diesel",
- "nats",
  "serde",
  "serde_yaml",
  "strum",

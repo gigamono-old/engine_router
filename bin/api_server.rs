@@ -8,7 +8,7 @@ use utilities::setup::APISetup;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let setup = Arc::new(APISetup::new()?);
+    let setup = Arc::new(APISetup::new().await?);
     let server = APIServer::new(setup);
     server.listen().await
 }

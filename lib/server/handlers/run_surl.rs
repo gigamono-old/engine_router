@@ -1,22 +1,29 @@
 use crate::diesel::prelude::*;
 use hyper::{Body, Request, Response};
-use log::info;
+use log::{debug, info};
 use std::{
+    mem,
     sync::{Arc, Mutex},
-    time::Duration,
 };
-use utilities::{database::DB, errors::{self, HandlerError, HandlerErrorMessage}, http::{StatusCode, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER}, natsio::{self, Message, WorkspacesAction}, result::HandlerResult, setup::APISetup};
+use utilities::{
+    database::DB,
+    errors::{self, HandlerError, HandlerErrorMessage},
+    http::{StatusCode, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER},
+    natsio::{self, WorkspacesAction},
+    result::HandlerResult,
+    setup::APISetup,
+};
 use uuid::Uuid;
 
 pub(crate) async fn run_surl(
     req: Request<Body>,
-    stream_buf_mutex: Arc<Mutex<Vec<u8>>>,
+    stream_buf: Arc<Mutex<Vec<u8>>>,
     setup: Arc<APISetup>,
 ) -> HandlerResult<Response<Body>> {
     // Get id from header.
     let workspace_id = get_workspace_id(&setup.db, &req)?;
 
-    info!(r#"Retrieved workspace id "{}""#, workspace_id);
+    debug!(r#"Retrieved workspace id "{}""#, workspace_id);
 
     // Get config.
     let config = &setup.common.config;
@@ -24,34 +31,41 @@ pub(crate) async fn run_surl(
     // Get workspace subject.
     let subj = natsio::get_workpace_subject(config, WorkspacesAction::RunSurl, Some(&workspace_id));
 
-    info!(r#"Sending message with subject "{}""#, subj);
-
-    // Get stream buffer from mutex.
-    let stream_buf_guard = stream_buf_mutex.lock().unwrap(); // Lock Resource.
-    let stream_buf: &[u8] = stream_buf_guard.as_ref();
-
     // Make request to backend and wait for response.
     let nats_conn = &setup.common.nats;
 
-    // TODO(appcypher): How to send workspace_id and url_path in nats message headers.
-    // let msg =
+    // Create NATS message headers.
+    let headers = [
+        (natsio::WORKSPACE_ID_HEADER, workspace_id.as_str()),
+        (natsio::URL_PATH_HEADER, req.uri().path()),
+    ]
+    .iter()
+    .collect();
 
-    let resp = nats_conn
-        .request_timeout(
-            &subj,
-            stream_buf,
-            Duration::from_secs(config.engines.api.reply_timeout),
-        )
+    debug!(r#"Set NATS message headers "{:?}""#, headers);
+
+    // Move stream buffer from mutex. We used `stream_buf.lock().unwrap()` temp MutexGuard value here to avoid async !Send issues.
+    let stream_buf = mem::replace(&mut *stream_buf.lock().unwrap(), vec![]);
+
+    // TODO(appcypher): Set reply channel.
+    let reply = "";
+
+    // Publish.
+    nats_conn
+        .publish_with_reply_or_headers(&subj, Some(reply), Some(&headers), &stream_buf)
+        .await
         .map_err(|err| HandlerError::Internal {
             ctx: HandlerErrorMessage::InternalError,
-            src: err,
+            src: errors::wrap_error("requesting and waiting for response", err).unwrap_err(),
         })?;
 
-    // Drop guard.
-    drop(stream_buf_guard);
+    info!(r#"Published message with subject "{}""#, subj);
 
-    // TODO(appcypher): Get response bytes and send. Response bytes is raw HTTP response.
-    Ok(Response::new(Body::from(resp.data)))
+    // TODO(appcypher):
+    // - Wait for response.
+    // - Send as is to the user.
+    // - Response bytes is raw HTTP response bytes. Response builder(?)
+    Ok(Response::new(Body::from("Hello there!")))
 }
 
 pub(crate) fn get_workspace_id(
