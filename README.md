@@ -4,9 +4,9 @@
     </a>
 </div>
 
-<h1 align="center">Engine API</h1>
-
-`engine-api` is the user-facing service exposing the functions of the Gigamono framework to the users.
+<h1 align="center">Engine Router</h1>
+.
+`engine-router` is a user-facing service. It's sole purpose is to provide TCP connections to clients and route requests and streams to the right subscribers.
 
 > Information provided here is for folks working on this package. If your goal is to get started with the Gigamono framework, check the [Gigamono repo](https://github.com/gigamono/gigamono) on how to do that.
 
@@ -85,13 +85,13 @@ If you prefer to set things up yourself, you can follow this guide.
 - Run migrations
 
   ```bash
-  diesel migration run --database-url "postgresql://localhost:5432/apidb"
+  diesel migration run --database-url "postgresql://localhost:5432/routerdb"
   ```
 
 - If you make changes to the migrations folder, update the `lib/db/schema.rs` file with:
 
   ```bash
-  diesel print-schema --database-url "postgresql://localhost:5432/apidb" > lib/db/schema.rs
+  diesel print-schema --database-url "postgresql://localhost:5432/routerdb" > lib/db/schema.rs
   ```
 
 - Updating the schema also means updating the models.

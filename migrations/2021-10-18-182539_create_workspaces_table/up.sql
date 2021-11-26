@@ -1,3 +1,5 @@
+-- Copyright 2021 the Gigamono authors. All rights reserved. Apache 2.0 license.
+
 -- Your SQL goes here
 CREATE TABLE workspaces (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
