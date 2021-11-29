@@ -1,29 +1,29 @@
+// Copyright 2021 the Gigamono authors. All rights reserved. Apache 2.0 license.
+
 use std::sync::Arc;
 
 use hyper::{Body, Request, Response};
-use parking_lot::Mutex;
 use utilities::{
     errors::{self, HandlerError, HandlerErrorMessage},
     http::{utils, StatusCode},
     result::HandlerResult,
-    setup::APISetup,
+    setup::RouterSetup,
 };
 
 pub(crate) async fn router(
     req: Request<Body>,
-    stream_buf_mutex: Arc<Mutex<Vec<u8>>>,
-    setup: Arc<APISetup>,
+    setup: Arc<RouterSetup>,
 ) -> HandlerResult<Response<Body>> {
     let _ = req.method();
     let path = req.uri().path();
 
     // If the path starts with "/r/".
     if path.starts_with("/r/") {
-        super::run_surl(req, stream_buf_mutex, setup).await
+        super::run_surl(req, setup).await
 
     // If the path starts with a number (like "/2/system/load/prometheus/index.css").
     } else if let Ok(_) = utils::parse_url_path_number(path) {
-        super::run_surl(req, stream_buf_mutex, setup).await
+        super::run_surl(req, setup).await
 
     // The other routes.
     } else {

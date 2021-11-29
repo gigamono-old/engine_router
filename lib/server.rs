@@ -1,7 +1,6 @@
 // Copyright 2021 the Gigamono authors. All rights reserved. Apache 2.0 license.
 
-mod api_server;
-mod handlers;
-mod stream;
+mod router_server;
+mod router;
 
-pub use api_server::*;
+pub use router_server::*;

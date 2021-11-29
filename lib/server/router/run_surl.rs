@@ -1,22 +1,25 @@
+// Copyright 2021 the Gigamono authors. All rights reserved. Apache 2.0 license.
+
 use crate::diesel::prelude::*;
 use hyper::{Body, Request, Response};
 use log::{debug, info};
 use parking_lot::Mutex;
-use std::{mem, sync::Arc};
+use rand::{distributions::Alphanumeric, Rng};
+use std::sync::Arc;
+use tokio::time::{sleep, Duration};
 use utilities::{
     database::DB,
     errors::{self, HandlerError, HandlerErrorMessage},
-    http::{StatusCode, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER},
+    http::{self, StatusCode, WORKSPACE_ID_HEADER, WORKSPACE_NAME_HEADER},
     natsio::{self, WorkspacesAction},
-    result::HandlerResult,
-    setup::APISetup,
+    result::{Context, HandlerResult},
+    setup::RouterSetup,
 };
 use uuid::Uuid;
 
 pub(crate) async fn run_surl(
     req: Request<Body>,
-    stream_buf: Arc<Mutex<Vec<u8>>>,
-    setup: Arc<APISetup>,
+    setup: Arc<RouterSetup>,
 ) -> HandlerResult<Response<Body>> {
     // Get id from header.
     let workspace_id = get_workspace_id(&setup.db, &req)?;
@@ -42,15 +45,34 @@ pub(crate) async fn run_surl(
 
     debug!(r#"Set NATS message headers "{:?}""#, headers);
 
-    // Move stream buffer from mutex. We used `stream_buf.lock()` temp MutexGuard value here to avoid async !Send issues.
-    let stream_buf = mem::replace(&mut *stream_buf.lock(), Vec::new());
+    // Set reply channel.
+    let reply_to = format!(
+        "reply_{}",
+        rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .collect::<String>()
+    );
 
-    // TODO(appcypher): Set reply channel.
-    let reply = "";
+    info!(r#"Reply id "{}""#, reply_to);
+
+    // Convert hyper request and serialize.
+    let request = http::Request::from_hyper_request(req)
+        .await
+        .map_err(|err| HandlerError::Internal {
+            ctx: HandlerErrorMessage::InternalError,
+            src: err,
+        })?;
+
+    let request_bytes = bincode::serialize(&request).map_err(|err| HandlerError::Internal {
+        ctx: HandlerErrorMessage::InternalError,
+        src: errors::wrap_error("serializing request", err).unwrap_err(),
+    })?;
 
     // Publish.
     nats_conn
-        .publish_with_reply_or_headers(&subj, Some(reply), Some(&headers), &stream_buf)
+        .publish_with_reply_or_headers(&subj, Some(&reply_to), Some(&headers), &request_bytes) // TODO(appcypher)
         .await
         .map_err(|err| HandlerError::Internal {
             ctx: HandlerErrorMessage::InternalError,
@@ -59,11 +81,27 @@ pub(crate) async fn run_surl(
 
     info!(r#"Published message with subject "{}""#, subj);
 
-    // TODO(appcypher):
-    // - Wait for response.
-    // - Send as is to the user.
-    // - Response bytes is raw HTTP response bytes. Response builder(?)
-    Ok(Response::new(Body::from("Hello there!")))
+    // Wait for reply.
+    let subscription = nats_conn
+        .queue_subscribe(&reply_to, "reply_responder")
+        .await
+        .map_err(|err| HandlerError::Internal {
+            ctx: HandlerErrorMessage::InternalError,
+            src: errors::wrap_error("subscribing to reply subject", err).unwrap_err(),
+        })?;
+
+    // Get the response but only wait for 10 seconds.
+    tokio::select! {
+        response = subscription.next() => {
+            let msg = response.expect("subscription to reply subject closed or unsubscribed");
+
+            // TODO(appcypher): Deserialize response.
+            Ok(Response::new(Body::from("Hello there!")))
+        }
+        _ = sleep(Duration::from_secs(10)) => {
+            Ok(Response::new(Body::from("Hello there!")))
+        }
+    }
 }
 
 pub(crate) fn get_workspace_id(
