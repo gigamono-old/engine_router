@@ -10,6 +10,24 @@
 
 > Information provided here is for folks working on this package. If your goal is to get started with the Gigamono framework, check the [Gigamono repo](https://github.com/gigamono/gigamono) on how to do that.
 
+
+## Why I'm Deciding Against Using NATS for Ingress Traffic Load Balancing.
+
+So I have decided to scrap engine-router and have engine-backend take http requests directly. I've decided service mesh implementation is better for ingress traffic and that nats makes more sense for internal communication like engine-backend to engine-database.
+
+Having engine-router serve as a pseudo-proxy that takes http requests from the outside world and routes them via a NATS server to the right engine-backend is quite complicated and error-prone. NATS does not make a scenario like this easy and the number of hops required makes me cringe. Sure service mesh has a similar number of hops but at least it is optimised for my use case.
+
+As of writing, the following are the issues I faced with NATS:
+1. NATS does not have a way to tell a client that there are no subscriber for the message it is sending. You can solve this by relying on timeouts (which is a havent for DOS attacks) or you can manually get the information out of the NATS server which adds to to latency issues. I have to handle HTTP-related issues like retries. Service meshs solve this naturally because they support HTTP proxying, handling retries, acknowledgement, etc.
+
+2. There is latency gains from hopping between engine-router, NATS server and engine-backend. With service mesh like linkerd, you get a more efficient proxy sidecare that reduces latency significantly.
+
+3. Implementing all of these not only made the engine-router more complex but also the engine-backend which should solely be focused on orchestrating tera runtimes.
+
+#### References
+
+- [How I was going to solve the problem](https://gist.github.com/appcypher/dd806c20fe4872dae536539905cc8ccd)
+
 ##
 
 ### Content
