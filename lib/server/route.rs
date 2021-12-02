@@ -10,7 +10,9 @@ use utilities::{
     setup::RouterSetup,
 };
 
-pub(crate) async fn router(
+use super::handlers::run_surl;
+
+pub(crate) async fn route(
     req: Request<Body>,
     setup: Arc<RouterSetup>,
 ) -> HandlerResult<Response<Body>> {
@@ -19,11 +21,11 @@ pub(crate) async fn router(
 
     // If the path starts with "/r/".
     if path.starts_with("/r/") {
-        super::run_surl(req, setup).await
+        run_surl(req, setup).await
 
     // If the path starts with a number (like "/2/system/load/prometheus/index.css").
     } else if let Ok(_) = utils::parse_url_path_number(path) {
-        super::run_surl(req, setup).await
+        run_surl(req, setup).await
 
     // The other routes.
     } else {

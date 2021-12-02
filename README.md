@@ -5,7 +5,7 @@
 </div>
 
 <h1 align="center">Engine Router</h1>
-.
+
 `engine-router` is a user-facing service. It's sole purpose is to provide TCP connections to clients and route requests and streams to the right subscribers.
 
 > Information provided here is for folks working on this package. If your goal is to get started with the Gigamono framework, check the [Gigamono repo](https://github.com/gigamono/gigamono) on how to do that.

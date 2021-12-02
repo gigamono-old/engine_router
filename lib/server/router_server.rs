@@ -1,6 +1,6 @@
 // Copyright 2021 the Gigamono authors. All rights reserved. Apache 2.0 license.
 
-use super::router;
+use crate::route;
 use futures::{Future, FutureExt};
 use hyper::service::make_service_fn;
 use hyper::{service::service_fn, Body};
@@ -10,9 +10,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
-use utilities::errors::{self, HandlerError, HandlerErrorMessage};
-use utilities::result::HandlerResult;
-use utilities::setup::RouterSetup;
+use utilities::{errors::{self, HandlerError, HandlerErrorMessage}, result::HandlerResult, setup::RouterSetup};
 
 pub struct RouterServer {
     pub setup: Arc<RouterSetup>,
@@ -40,7 +38,7 @@ impl RouterServer {
 
             async {
                 Ok::<_, Infallible>(service_fn(move |req| {
-                    Self::error_wrap(router::router, req, Arc::clone(&setup))
+                    Self::error_wrap(route, req, Arc::clone(&setup))
                 }))
             }
         });

@@ -5,6 +5,8 @@ extern crate diesel;
 
 mod db;
 mod server;
+mod streamer;
 
 pub use db::*;
 pub use server::*;
+pub use streamer::*;
