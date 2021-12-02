@@ -13,16 +13,17 @@
 
 ## Why I'm Deciding Against Using NATS for Ingress Traffic Load Balancing.
 
-So I have decided to scrap engine-router and have engine-backend take http requests directly. I've decided service mesh implementation is better for ingress traffic and that nats makes more sense for internal communication like engine-backend to engine-database.
+So I have decided to scrap engine-router and have engine-backend take http requests directly. I believe using a service mesh is better for ingress traffic and that NATS makes more sense for internal communication like engine-backend to engine-database.
 
-Having engine-router serve as a pseudo-proxy that takes http requests from the outside world and routes them via a NATS server to the right engine-backend is quite complicated and error-prone. NATS does not make a scenario like this easy and the number of hops required makes me cringe. Sure service mesh has a similar number of hops but at least it is optimised for my use case.
+Having engine-router serve as a pseudo-proxy that takes HTTP requests from the outside world and routes them via a NATS server to the right engine-backend is quite complicated and error-prone. NATS does not make a scenario like this easy to implement and the number of hops required makes me cringe. Sure service mesh has a similar number of hops but at least it is optimised for my use case.
 
 As of writing, the following are the issues I faced with NATS:
-1. NATS does not have a way to tell a client that there are no subscriber for the message it is sending. You can solve this by relying on timeouts (which is a havent for DOS attacks) or you can manually get the information out of the NATS server which adds to to latency issues. I have to handle HTTP-related issues like retries. Service meshs solve this naturally because they support HTTP proxying, handling retries, acknowledgement, etc.
 
-2. There is latency gains from hopping between engine-router, NATS server and engine-backend. With service mesh like linkerd, you get a more efficient proxy sidecare that reduces latency significantly.
+1. NATS does not have a way to tell a client that there are no subscriber for the message it is sending. You could solve this by relying on timeouts (which is a haven for DOS attacks) or you could get the information from a NATS server which adds to latency. I also have to handle HTTP-related issues like retries. These are the kind of problems service mesh frameworks are designed to solve. They naturally support HTTP proxying out of the box, handling retries, acknowledgement, etc.
 
-3. Implementing all of these not only made the engine-router more complex but also the engine-backend which should solely be focused on orchestrating tera runtimes.
+2. The significant latency from hopping between engine-router, NATS server and engine-backend is also an issue. With service mesh like linkerd, you get a more efficient proxy sidecar that reduces latency.
+
+Implementing the request-response streaming not only made the engine-router more complex but also extended the complexity to engine-backend, which should solely be focused on orchestrating tera runtimes.
 
 #### References
 
